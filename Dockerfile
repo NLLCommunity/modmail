@@ -8,6 +8,9 @@ COPY *.go ./
 # Copy help
 COPY ./help.md ./
 
+# Copy HTML
+COPY *.html ./
+
 RUN go mod download
 RUN  go build -o /bin/modmail
 

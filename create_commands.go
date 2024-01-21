@@ -213,7 +213,7 @@ func helpHandler(ev *handler.CommandEvent) error {
 	}
 
 	return ev.CreateMessage(discord.MessageCreate{
-		Content: helpText,
+		Content: "",
 		Embeds: []discord.Embed{
 			discord.NewEmbedBuilder().
 				SetTitle("Modmail Help").

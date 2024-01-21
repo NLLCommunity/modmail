@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	_ "embed"
+	"encoding/hex"
 	"fmt"
 	"github.com/disgoorg/disgo"
 	"github.com/disgoorg/disgo/bot"
@@ -10,6 +12,7 @@ import (
 	"github.com/disgoorg/disgo/handler"
 	"github.com/disgoorg/disgo/httpserver"
 	"github.com/disgoorg/snowflake/v2"
+	"github.com/labstack/echo/v4"
 	"github.com/spf13/viper"
 	"log/slog"
 	"os"
@@ -46,16 +49,12 @@ func main() {
 	})
 	r.Command("/ping", pingHandler)
 	r.Command("/create-report-button", createReportButtonHandler)
+	r.Command("/help", helpHandler)
 	r.Component("/report-button/{role}", reportButtonHandler)
 	r.Modal("/report-modal/{role}", reportModalHandler)
 
 	client, err := disgo.New(
 		BOT_TOKEN,
-		bot.WithHTTPServerConfigOpts(
-			PUB_KEY,
-			httpserver.WithURL("/interactions"),
-			httpserver.WithAddress(fmt.Sprintf(":%d", viper.GetUint("http_server.port"))),
-		),
 		bot.WithDefaultGateway(),
 		bot.WithEventListeners(r),
 		bot.WithEventListenerFunc(func(ev *events.Ready) {
@@ -95,7 +94,8 @@ func main() {
 	}
 
 	if viper.GetBool("http_server.enabled") {
-		err = client.OpenHTTPServer()
+		address := fmt.Sprintf(":%d", viper.GetInt("http_server.port"))
+		openHTTPServer(client, PUB_KEY, "/interactions", address)
 		slog.Info("HTTP server is listening", "port", viper.GetInt("http_server.port"))
 	} else {
 		err = client.OpenGateway(context.Background())
@@ -107,4 +107,35 @@ func main() {
 	s := make(chan os.Signal, 1)
 	signal.Notify(s, os.Interrupt, syscall.SIGTERM)
 	<-s
+}
+
+//go:embed welcome.html
+var welcomePage string
+
+func openHTTPServer(client bot.Client, publicKey, webhookPath, address string) {
+	r := echo.New()
+	pubKeyBytes, err := hex.DecodeString(publicKey)
+	if err != nil {
+		panic(err)
+	}
+
+	handlerFunc := httpserver.HandleInteraction(
+		pubKeyBytes,
+		slog.Default(),
+		client.EventManager().HandleHTTPEvent,
+	)
+
+	r.POST(webhookPath, func(c echo.Context) error {
+		handlerFunc.ServeHTTP(c.Response().Writer, c.Request())
+		return nil
+	})
+
+	r.GET("/", func(c echo.Context) error {
+		return c.HTML(200, welcomePage)
+	})
+
+	slog.Info("HTTP server is listening", "address", address)
+
+	r.HideBanner = true
+	go r.Start(address)
 }
