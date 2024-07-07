@@ -207,7 +207,7 @@ func reportModalHandler(ev *handler.ModalEvent) error {
 			_, err = ev.Client().Rest().CreateMessage(
 				channelSf,
 				discord.NewMessageCreateBuilder().
-					SetContent("## New Modmail thread.").
+					SetContentf("## New Modmail thread in <#%d>", ev.Channel().ID()).
 					AddEmbeds(embed).
 					AddActionRow(
 						discord.NewLinkButton("Go to thread", message.JumpURL()),
