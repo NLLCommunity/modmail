@@ -5,6 +5,11 @@ import (
 	_ "embed"
 	"encoding/hex"
 	"fmt"
+	"log/slog"
+	"os"
+	"os/signal"
+	"syscall"
+
 	"github.com/disgoorg/disgo"
 	"github.com/disgoorg/disgo/bot"
 	"github.com/disgoorg/disgo/discord"
@@ -14,10 +19,6 @@ import (
 	"github.com/disgoorg/snowflake/v2"
 	"github.com/labstack/echo/v4"
 	"github.com/spf13/viper"
-	"log/slog"
-	"os"
-	"os/signal"
-	"syscall"
 )
 
 func main() {
@@ -40,9 +41,28 @@ func main() {
 	r := handler.New()
 	r.Use(func(next handler.Handler) handler.Handler {
 		return func(e *events.InteractionCreate) error {
+			customID := ""
+			interactionType := "unknown"
+			switch i := e.Interaction.(type) {
+			case discord.ApplicationCommandInteraction:
+				interactionType = "command"
+			case discord.AutocompleteInteraction:
+				interactionType = "autocomplete"
+			case discord.ComponentInteraction:
+				interactionType = "component"
+				customID = i.Data.CustomID()
+			case discord.ModalSubmitInteraction:
+				interactionType = "modal"
+				customID = i.Data.CustomID
+			case discord.PingInteraction:
+				interactionType = "ping"
+			}
+
 			slog.Info("handling interaction",
 				slog.Int64("interaction_id", int64(e.Interaction.ID())),
-				slog.Int("interaction_type", int(e.Interaction.Type())),
+				slog.Any("interaction", e.Interaction.Type()),
+				slog.String("interaction_type", interactionType),
+				slog.String("custom_id", customID),
 			)
 			return next(e)
 		}
@@ -51,7 +71,9 @@ func main() {
 	r.Command("/create-report-button", createReportButtonHandler)
 	r.Command("/help", helpHandler)
 	r.Component("/report-button/{role}", reportButtonHandler)
+	r.Component("/v2/report-button/{role}/{channel}", reportButtonHandler)
 	r.Modal("/report-modal/{role}", reportModalHandler)
+	r.Modal("/v2/report-modal/{role}/{channel}", reportModalHandler)
 
 	client, err := disgo.New(
 		BOT_TOKEN,

@@ -4,11 +4,13 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
+	"log/slog"
+
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/disgo/handler"
 	"github.com/disgoorg/disgo/rest"
 	"github.com/disgoorg/json"
-	"log/slog"
+	"github.com/disgoorg/snowflake/v2"
 )
 
 var pingCommand = discord.SlashCommandCreate{
@@ -63,6 +65,14 @@ var createReportButtonCommand = discord.SlashCommandCreate{
 			Description: "The role that should be tagged when submitting a report",
 			Required:    false,
 		},
+		discord.ApplicationCommandOptionChannel{
+			Name:        "channel",
+			Description: "The channel to send the report to",
+			Required:    false,
+			ChannelTypes: []discord.ChannelType{
+				discord.ChannelTypeGuildText,
+			},
+		},
 	},
 }
 
@@ -78,6 +88,7 @@ func createReportButtonHandler(ev *handler.CommandEvent) error {
 	label := data.String("label")
 	color := data.String("button-color")
 	role := data.Role("role")
+	channel := data.Channel("channel")
 	if color == "" {
 		color = "blue"
 	}
@@ -88,7 +99,7 @@ func createReportButtonHandler(ev *handler.CommandEvent) error {
 				discord.NewButton(
 					stringToButtonStyle[color],
 					label,
-					fmt.Sprintf("/report-button/%d", uint64(role.ID)),
+					fmt.Sprintf("/v2/report-button/%d/%d", uint64(role.ID), uint64(channel.ID)),
 					"",
 				),
 			},
@@ -104,7 +115,10 @@ func reportButtonHandler(ev *handler.ComponentEvent) error {
 		"channel_id", ev.Channel().ID(),
 	)
 	role := ev.Variables["role"]
-	customID := fmt.Sprintf("/report-modal/%s", role)
+	channel := ev.Variables["channel"]
+
+	var customID string = fmt.Sprintf("/v2/report-modal/%s/%s", role, channel)
+
 	slog.Info("Sending modal", "custom_id", customID)
 	modal := discord.NewModalCreateBuilder().
 		SetCustomID(customID).
@@ -142,7 +156,10 @@ func reportButtonHandler(ev *handler.ComponentEvent) error {
 
 func reportModalHandler(ev *handler.ModalEvent) error {
 	_ = ev.DeferCreateMessage(true)
+
 	role := ev.Variables["role"]
+	channel := ev.Variables["channel"]
+
 	title := ev.Data.Text("title")
 	description := ev.Data.Text("description")
 
@@ -182,6 +199,26 @@ func reportModalHandler(ev *handler.ModalEvent) error {
 		})
 	if err != nil {
 		return err
+	}
+
+	if channel != "" && channel != "0" {
+		channelSf, err := snowflake.Parse(channel)
+		if err == nil {
+			_, err = ev.Client().Rest().CreateMessage(
+				channelSf,
+				discord.NewMessageCreateBuilder().
+					SetContent("## New Modmail thread.").
+					AddEmbeds(embed).
+					AddActionRow(
+						discord.NewLinkButton("Go to thread", message.JumpURL()),
+					).
+					Build(),
+			)
+
+			if err != nil {
+				slog.Error("Failed to send message to modmail channel", "err", err, "channel", channel)
+			}
+		}
 	}
 
 	_, err = ev.CreateFollowupMessage(discord.MessageCreate{
