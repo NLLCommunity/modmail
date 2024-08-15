@@ -40,7 +40,7 @@ func main() {
 
 	r := handler.New()
 	r.Use(func(next handler.Handler) handler.Handler {
-		return func(e *events.InteractionCreate) error {
+		return func(e *handler.InteractionEvent) error {
 			customID := ""
 			interactionType := "unknown"
 			switch i := e.Interaction.(type) {

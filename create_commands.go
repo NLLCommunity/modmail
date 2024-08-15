@@ -101,6 +101,7 @@ func createReportButtonHandler(ev *handler.CommandEvent) error {
 					label,
 					fmt.Sprintf("/v2/report-button/%d/%d", uint64(role.ID), uint64(channel.ID)),
 					"",
+					0,
 				),
 			},
 		},
@@ -114,8 +115,8 @@ func reportButtonHandler(ev *handler.ComponentEvent) error {
 		"guild_id", *ev.GuildID(),
 		"channel_id", ev.Channel().ID(),
 	)
-	role := ev.Variables["role"]
-	channel := ev.Variables["channel"]
+	role := ev.Vars["role"]
+	channel := ev.Vars["channel"]
 
 	var customID string = fmt.Sprintf("/v2/report-modal/%s/%s", role, channel)
 
@@ -157,8 +158,8 @@ func reportButtonHandler(ev *handler.ComponentEvent) error {
 func reportModalHandler(ev *handler.ModalEvent) error {
 	_ = ev.DeferCreateMessage(true)
 
-	role := ev.Variables["role"]
-	channel := ev.Variables["channel"]
+	role := ev.Vars["role"]
+	channel := ev.Vars["channel"]
 
 	title := ev.Data.Text("title")
 	description := ev.Data.Text("description")
@@ -168,7 +169,7 @@ func reportModalHandler(ev *handler.ModalEvent) error {
 		discord.GuildPrivateThreadCreate{
 			Name:                title,
 			AutoArchiveDuration: 10080,
-			Invitable:           false,
+			Invitable:           ref(false),
 		})
 	if err != nil {
 		return err
