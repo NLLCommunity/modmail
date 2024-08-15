@@ -11,7 +11,7 @@ COPY ./help.md ./
 # Copy HTML
 COPY *.html ./
 
-RUN go mod download
+RUN go get
 RUN  go build -o /bin/modmail
 
 FROM alpine:latest
