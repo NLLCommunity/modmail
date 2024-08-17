@@ -328,13 +328,11 @@ func isBelowMaxActive(e handler.ModalEvent, maxActive int) (bool, error) {
 		return false, err
 	}
 
-	var channelThreadMembers []discord.ThreadMember
 	userThreadsCount := 0
-	for ix, thread := range activeThreads.Threads {
+	for _, thread := range activeThreads.Threads {
 		if *thread.ParentID() != e.Channel().ID() {
 			continue
 		}
-		channelThreadMembers = append(channelThreadMembers, activeThreads.Members[ix])
 		members, err := e.Client().Rest().GetThreadMembers(thread.ID())
 		if err != nil {
 			slog.Error("Failed to get thread members", "err", err)
