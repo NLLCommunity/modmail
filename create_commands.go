@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"strconv"
 
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/disgo/handler"
@@ -73,6 +74,13 @@ var createReportButtonCommand = discord.SlashCommandCreate{
 				discord.ChannelTypeGuildText,
 			},
 		},
+		discord.ApplicationCommandOptionInt{
+			Name:        "max-active-reports",
+			Description: "The maximum number of active reports a user can have. (0 or unspecified = no limit)",
+			Required:    false,
+			MinValue:    ref(0),
+			MaxValue:    ref(100),
+		},
 	},
 }
 
@@ -89,6 +97,7 @@ func createReportButtonHandler(ev *handler.CommandEvent) error {
 	color := data.String("button-color")
 	role := data.Role("role")
 	channel := data.Channel("channel")
+	maxActive := data.Int("max-active-reports")
 	if color == "" {
 		color = "blue"
 	}
@@ -99,7 +108,7 @@ func createReportButtonHandler(ev *handler.CommandEvent) error {
 				discord.NewButton(
 					stringToButtonStyle[color],
 					label,
-					fmt.Sprintf("/v2/report-button/%d/%d", uint64(role.ID), uint64(channel.ID)),
+					fmt.Sprintf("/v3/report-button/%d/%d/%d", uint64(role.ID), uint64(channel.ID), maxActive),
 					"",
 					0,
 				),
@@ -114,11 +123,12 @@ func reportButtonHandler(ev *handler.ComponentEvent) error {
 		"user_name", ev.User().Username,
 		"guild_id", *ev.GuildID(),
 		"channel_id", ev.Channel().ID(),
+		"custom_id", ev.Data.CustomID(),
 	)
 	role := ev.Vars["role"]
 	channel := ev.Vars["channel"]
-
-	var customID string = fmt.Sprintf("/v2/report-modal/%s/%s", role, channel)
+	maxActive := ev.Vars["max_active"]
+	customID := fmt.Sprintf("/v3/report-modal/%s/%s/%s", role, channel, maxActive)
 
 	slog.Info("Sending modal", "custom_id", customID)
 	modal := discord.NewModalCreateBuilder().
@@ -160,6 +170,34 @@ func reportModalHandler(ev *handler.ModalEvent) error {
 
 	role := ev.Vars["role"]
 	channel := ev.Vars["channel"]
+	maxActiveStr := ev.Vars["max_active"]
+
+	maxActive, err := strconv.Atoi(maxActiveStr)
+	if err != nil {
+		slog.Error("Failed to parse max active", "err", err, "max_active", maxActiveStr)
+		_, err := ev.CreateFollowupMessage(discord.NewMessageCreateBuilder().
+			SetContent("Failed to parse report config.").
+			SetEphemeral(true).
+			Build())
+		return err
+	}
+	canSubmit, err := isBelowMaxActive(*ev, maxActive)
+	if err != nil {
+		slog.Error("Failed to check if user can submit report", "err", err, "max_active", maxActiveStr)
+		_, err := ev.CreateFollowupMessage(discord.NewMessageCreateBuilder().
+			SetContent("Failed to check if user can submit report.").
+			SetEphemeral(true).
+			Build())
+		return err
+	}
+
+	if !canSubmit {
+		_, err := ev.CreateFollowupMessage(discord.NewMessageCreateBuilder().
+			SetContent("You have reached the maximum number of active reports.").
+			SetEphemeral(true).
+			Build())
+		return err
+	}
 
 	title := ev.Data.Text("title")
 	description := ev.Data.Text("description")
@@ -238,7 +276,6 @@ var helpCommand = discord.SlashCommandCreate{
 	Name:                     "help",
 	Description:              "Show help for setting up the bot",
 	DefaultMemberPermissions: json.NewNullablePtr(discord.PermissionManageGuild),
-	DMPermission:             ref(true),
 }
 
 //go:embed help.md
@@ -272,4 +309,49 @@ func iif[T any](cond bool, ifTrue, ifFalse T) T {
 
 func ref[T any](v T) *T {
 	return &v
+}
+
+func isBelowMaxActive(e handler.ModalEvent, maxActive int) (bool, error) {
+	if maxActive == 0 {
+		return true, nil
+	}
+
+	if e.GuildID() == nil {
+		slog.Error("Not in guild")
+		return false, nil
+	}
+	guildID := *e.GuildID()
+
+	activeThreads, err := e.Client().Rest().GetActiveGuildThreads(guildID)
+	if err != nil {
+		slog.Error("Failed to list active threads", "err", err)
+		return false, err
+	}
+
+	var channelThreadMembers []discord.ThreadMember
+	userThreadsCount := 0
+	for ix, thread := range activeThreads.Threads {
+		if *thread.ParentID() != e.Channel().ID() {
+			continue
+		}
+		channelThreadMembers = append(channelThreadMembers, activeThreads.Members[ix])
+		members, err := e.Client().Rest().GetThreadMembers(thread.ID())
+		if err != nil {
+			slog.Error("Failed to get thread members", "err", err)
+			return false, err
+		}
+		for _, member := range members {
+			if member.UserID == e.User().ID {
+				userThreadsCount++
+			}
+			if userThreadsCount >= maxActive {
+				return false, nil
+			}
+		}
+	}
+	if userThreadsCount >= maxActive {
+		return false, nil
+	}
+
+	return true, nil
 }

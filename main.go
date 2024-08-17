@@ -72,8 +72,10 @@ func main() {
 	r.Command("/help", helpHandler)
 	r.Component("/report-button/{role}", reportButtonHandler)
 	r.Component("/v2/report-button/{role}/{channel}", reportButtonHandler)
+	r.Component("/v3/report-button/{role}/{channel}/{max_active}", reportButtonHandler)
 	r.Modal("/report-modal/{role}", reportModalHandler)
 	r.Modal("/v2/report-modal/{role}/{channel}", reportModalHandler)
+	r.Modal("/v3/report-modal/{role}/{channel}/{max_active}", reportModalHandler)
 
 	client, err := disgo.New(
 		BOT_TOKEN,
