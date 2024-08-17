@@ -3,7 +3,7 @@ module git.myrkvi.com/myrkvi/modmail
 go 1.21
 
 require (
-	github.com/disgoorg/disgo v0.18.11-0.20240815153134-ba59bef390f9
+	github.com/disgoorg/disgo v0.18.11-0.20240816190532-c6e6cabf22c6
 	github.com/disgoorg/json v1.1.0
 	github.com/disgoorg/snowflake/v2 v2.0.3
 	github.com/labstack/echo/v4 v4.12.0

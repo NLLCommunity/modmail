@@ -4,6 +4,8 @@ github.com/disgoorg/disgo v0.17.0 h1:/LcgXgPDhzHt3GkQ4cpjmIJBim1/VYfS31VhGYif3Ms
 github.com/disgoorg/disgo v0.17.0/go.mod h1:AE2J/8oLR2PtYfqcARsk1mgBxQ5z3Z1OD6Lc2SA0gak=
 github.com/disgoorg/disgo v0.18.11-0.20240815153134-ba59bef390f9 h1:baZG3qtlZWXcGnvb0DJcnO8762SwErwY9bUPYQo0d58=
 github.com/disgoorg/disgo v0.18.11-0.20240815153134-ba59bef390f9/go.mod h1:TN4tM8VaOaZebO+Ek3686RIATCL32uqPGSNdUYP8yVI=
+github.com/disgoorg/disgo v0.18.11-0.20240816190532-c6e6cabf22c6 h1:af3uMZ+1D858lICCK2MJMAJN9DF6MDI5Jt0ZNBWgMmg=
+github.com/disgoorg/disgo v0.18.11-0.20240816190532-c6e6cabf22c6/go.mod h1:TN4tM8VaOaZebO+Ek3686RIATCL32uqPGSNdUYP8yVI=
 github.com/disgoorg/json v1.1.0 h1:7xigHvomlVA9PQw9bMGO02PHGJJPqvX5AnwlYg/Tnys=
 github.com/disgoorg/json v1.1.0/go.mod h1:BHDwdde0rpQFDVsRLKhma6Y7fTbQKub/zdGO5O9NqqA=
 github.com/disgoorg/snowflake/v2 v2.0.1 h1:CuUxGLwggUxEswZOmZ+mZ5i0xSumQdXW9tXW7uGqe+0=

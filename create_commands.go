@@ -30,7 +30,7 @@ var createReportButtonCommand = discord.SlashCommandCreate{
 	Name:                     "create-report-button",
 	Description:              "Create a button",
 	DefaultMemberPermissions: json.NewNullablePtr(discord.PermissionManageGuild),
-	DMPermission:             ref(false),
+	Contexts:                 []discord.InteractionContextType{discord.InteractionContextTypeGuild},
 	Options: []discord.ApplicationCommandOption{
 		discord.ApplicationCommandOptionString{
 			Name:        "label",
