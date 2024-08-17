@@ -127,7 +127,10 @@ func reportButtonHandler(ev *handler.ComponentEvent) error {
 	)
 	role := ev.Vars["role"]
 	channel := ev.Vars["channel"]
-	maxActive := ev.Vars["max_active"]
+	maxActive, ok := ev.Vars["max_active"]
+	if !ok {
+		maxActive = "0"
+	}
 	customID := fmt.Sprintf("/v3/report-modal/%s/%s/%s", role, channel, maxActive)
 
 	slog.Info("Sending modal", "custom_id", customID)
