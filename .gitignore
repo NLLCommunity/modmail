@@ -2,3 +2,4 @@ config.toml
 Modmail
 *.exe
 modmail
+vendor
