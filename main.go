@@ -30,7 +30,7 @@ func main() {
 		missing = true
 		slog.Error("Missing discord.token")
 	}
-	if PUB_KEY == "" {
+	if PUB_KEY == "" && viper.GetBool("http_server.enabled") {
 		missing = true
 		slog.Error("Missing discord.pub_key")
 	}
