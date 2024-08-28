@@ -2,11 +2,12 @@ package main
 
 import (
 	"errors"
-	"github.com/spf13/pflag"
-	"github.com/spf13/viper"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 )
 
 var configPath *string = pflag.StringP("config", "C", "", "Path to config file")
@@ -31,12 +32,18 @@ func init() {
 	viper.AddConfigPath("/etc/modmail")
 	viper.AddConfigPath(".")
 
+	// This is how Heroku provides the port number.
+	envPort := os.Getenv("PORT")
+	if envPort == "" {
+		envPort = "8080"
+	}
+
 	viper.SetDefault("discord.token", "")
 	viper.SetDefault("discord.pub_key", "")
 	viper.SetDefault("dev_mode.enabled", false)
 	viper.SetDefault("dev_mode.guild", 0)
 	viper.SetDefault("http_server.enabled", false)
-	viper.SetDefault("http_server.port", 8080)
+	viper.SetDefault("http_server.port", envPort)
 
 	viper.AutomaticEnv()
 

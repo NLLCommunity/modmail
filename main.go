@@ -118,9 +118,9 @@ func main() {
 	}
 
 	if viper.GetBool("http_server.enabled") {
-		address := fmt.Sprintf(":%d", viper.GetInt("http_server.port"))
+		address := fmt.Sprintf(":%s", viper.GetString("http_server.port"))
 		openHTTPServer(client, PUB_KEY, "/interactions", address)
-		slog.Info("HTTP server is listening", "port", viper.GetInt("http_server.port"))
+		slog.Info("HTTP server is listening", "port", viper.GetString("http_server.port"))
 	} else {
 		err = client.OpenGateway(context.Background())
 	}
