@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strconv"
+	"time"
 
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/disgo/handler"
@@ -81,6 +82,11 @@ var createReportButtonCommand = discord.SlashCommandCreate{
 			MinValue:    ref(0),
 			MaxValue:    ref(100),
 		},
+		discord.ApplicationCommandOptionString{
+			Name:        "slow-mode-time",
+			Description: "Enable slow mode for the report thread in format '1h5m10s' (0s = disabled)",
+			Required:    false,
+		},
 	},
 }
 
@@ -98,8 +104,25 @@ func createReportButtonHandler(ev *handler.CommandEvent) error {
 	role := data.Role("role")
 	channel := data.Channel("channel")
 	maxActive := data.Int("max-active-reports")
+	slowModeStr := data.String("slow-mode-time")
 	if color == "" {
 		color = "blue"
+	}
+
+	slowMode, err := time.ParseDuration(slowModeStr)
+	if err != nil {
+		slog.Info("Failed to parse slow mode duration", "err", err, "slow_mode", slowModeStr)
+		return ev.CreateMessage(discord.NewMessageCreateBuilder().
+			SetContentf("Could not parse duration: `%s`", slowModeStr).
+			SetEphemeral(true).
+			Build())
+	}
+
+	if slowMode.Hours() > 6 {
+		return ev.CreateMessage(discord.NewMessageCreateBuilder().
+			SetContentf("Slow mode duration is too long: `%s`. Max is 6 hours.", slowModeStr).
+			SetEphemeral(true).
+			Build())
 	}
 
 	return ev.CreateMessage(discord.MessageCreate{
@@ -108,7 +131,7 @@ func createReportButtonHandler(ev *handler.CommandEvent) error {
 				discord.NewButton(
 					stringToButtonStyle[color],
 					label,
-					fmt.Sprintf("/v3/report-button/%d/%d/%d", uint64(role.ID), uint64(channel.ID), maxActive),
+					fmt.Sprintf("/v4/report-button/%d/%d/%d/%.0f", uint64(role.ID), uint64(channel.ID), maxActive, slowMode.Seconds()),
 					"",
 					0,
 				),
@@ -127,11 +150,17 @@ func reportButtonHandler(ev *handler.ComponentEvent) error {
 	)
 	role := ev.Vars["role"]
 	channel := ev.Vars["channel"]
+
 	maxActive, ok := ev.Vars["max_active"]
 	if !ok {
 		maxActive = "0"
 	}
-	customID := fmt.Sprintf("/v3/report-modal/%s/%s/%s", role, channel, maxActive)
+	slowModeStr, ok := ev.Vars["slow_mode"]
+	if !ok {
+		slowModeStr = "0"
+	}
+
+	customID := fmt.Sprintf("/v4/report-modal/%s/%s/%s/%s", role, channel, maxActive, slowModeStr)
 
 	slog.Info("Sending modal", "custom_id", customID)
 	modal := discord.NewModalCreateBuilder().
@@ -174,6 +203,7 @@ func reportModalHandler(ev *handler.ModalEvent) error {
 	role := ev.Vars["role"]
 	channel := ev.Vars["channel"]
 	maxActiveStr := ev.Vars["max_active"]
+	slowModeStr := ev.Vars["slow_mode"]
 
 	maxActive, err := strconv.Atoi(maxActiveStr)
 	if err != nil {
@@ -184,6 +214,17 @@ func reportModalHandler(ev *handler.ModalEvent) error {
 			Build())
 		return err
 	}
+
+	slowMode, err := strconv.Atoi(slowModeStr)
+	if err != nil {
+		slog.Error("Failed to parse slow mode", "err", err, "slow_mode", slowModeStr)
+		_, err := ev.CreateFollowupMessage(discord.NewMessageCreateBuilder().
+			SetContent("Failed to parse report config.").
+			SetEphemeral(true).
+			Build())
+		return err
+	}
+
 	canSubmit, err := isBelowMaxActive(*ev, maxActive)
 	if err != nil {
 		slog.Error("Failed to check if user can submit report", "err", err, "max_active", maxActiveStr)
@@ -214,6 +255,15 @@ func reportModalHandler(ev *handler.ModalEvent) error {
 		})
 	if err != nil {
 		return err
+	}
+
+	if slowMode > 0 {
+		_, err = ev.Client().Rest().UpdateChannel(thread.ID(), discord.GuildThreadUpdate{
+			RateLimitPerUser: ref(slowMode),
+		})
+		if err != nil {
+			slog.Warn("Failed to update thread rate limit", "err", err, "channel", thread.ID())
+		}
 	}
 
 	user := ev.User()

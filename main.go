@@ -30,7 +30,7 @@ func main() {
 		missing = true
 		slog.Error("Missing discord.token")
 	}
-	if PUB_KEY == "" {
+	if PUB_KEY == "" && viper.GetBool("http_server.enabled") {
 		missing = true
 		slog.Error("Missing discord.pub_key")
 	}
@@ -73,9 +73,11 @@ func main() {
 	r.Component("/report-button/{role}", reportButtonHandler)
 	r.Component("/v2/report-button/{role}/{channel}", reportButtonHandler)
 	r.Component("/v3/report-button/{role}/{channel}/{max_active}", reportButtonHandler)
+	r.Component("/v4/report-button/{role}/{channel}/{max_active}/{slow_mode}", reportButtonHandler)
 	r.Modal("/report-modal/{role}", reportModalHandler)
 	r.Modal("/v2/report-modal/{role}/{channel}", reportModalHandler)
 	r.Modal("/v3/report-modal/{role}/{channel}/{max_active}", reportModalHandler)
+	r.Modal("/v4/report-modal/{role}/{channel}/{max_active}/{slow_mode}", reportModalHandler)
 
 	client, err := disgo.New(
 		BOT_TOKEN,
