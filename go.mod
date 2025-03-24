@@ -8,7 +8,7 @@ require (
 	github.com/disgoorg/disgo v0.18.13
 	github.com/disgoorg/json v1.2.0
 	github.com/disgoorg/snowflake/v2 v2.0.3
-	github.com/labstack/echo/v4 v4.12.0
+	github.com/labstack/echo/v4 v4.13.3
 	github.com/spf13/pflag v1.0.6
 	github.com/spf13/viper v1.20.0
 )
