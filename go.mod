@@ -5,7 +5,7 @@ go 1.21.0
 toolchain go1.24.1
 
 require (
-	github.com/disgoorg/disgo v0.18.13
+	github.com/disgoorg/disgo v0.18.15
 	github.com/disgoorg/json v1.2.0
 	github.com/disgoorg/snowflake/v2 v2.0.3
 	github.com/labstack/echo/v4 v4.12.0
