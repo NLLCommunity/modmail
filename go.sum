@@ -18,6 +18,7 @@ github.com/disgoorg/json v1.1.0 h1:7xigHvomlVA9PQw9bMGO02PHGJJPqvX5AnwlYg/Tnys=
 github.com/disgoorg/json v1.1.0/go.mod h1:BHDwdde0rpQFDVsRLKhma6Y7fTbQKub/zdGO5O9NqqA=
 github.com/disgoorg/json v1.2.0 h1:6e/j4BCfSHIvucG1cd7tJPAOp1RgnnMFSqkvZUtEd1Y=
 github.com/disgoorg/json v1.2.0/go.mod h1:BHDwdde0rpQFDVsRLKhma6Y7fTbQKub/zdGO5O9NqqA=
+github.com/disgoorg/json/v2 v2.0.0/go.mod h1:jZTBC0nIE1WeetSEI3/Dka8g+qglb4FPVmp5I5HpEfI=
 github.com/disgoorg/snowflake/v2 v2.0.1 h1:CuUxGLwggUxEswZOmZ+mZ5i0xSumQdXW9tXW7uGqe+0=
 github.com/disgoorg/snowflake/v2 v2.0.1/go.mod h1:SPU9c2CNn5DSyb86QcKtdZgix9osEtKrHLW4rMhfLCs=
 github.com/disgoorg/snowflake/v2 v2.0.3 h1:3B+PpFjr7j4ad7oeJu4RlQ+nYOTadsKapJIzgvSI2Ro=
